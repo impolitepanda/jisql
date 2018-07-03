@@ -1,11 +1,6 @@
 package com.xigole.util.sql;
 
-import java.io.BufferedReader;
-import java.io.Console;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -250,6 +245,8 @@ public class Jisql {
     private String commandTerminator = "go";
     private String inputQuery = null;
 
+    private PrintStream outStream;
+
     /**
      * Runs Jisql with the command line arguments provided.
      * 
@@ -414,9 +411,9 @@ public class Jisql {
                         resultSet.clearWarnings();
                         resultSetMetaData = resultSet.getMetaData();
 
-                        formatter.formatHeader(System.out, resultSetMetaData);
-                        formatter.formatData(System.out, resultSet, resultSetMetaData);
-                        formatter.formatFooter(System.out, resultSetMetaData);
+                        formatter.formatHeader(outStream, resultSetMetaData);
+                        formatter.formatData(outStream, resultSet, resultSetMetaData);
+                        formatter.formatFooter(outStream, resultSetMetaData);
 
                         int rowsSelected = statement.getUpdateCount();
 
@@ -547,6 +544,8 @@ public class Jisql {
         parser.accepts("user").withRequiredArg().ofType(String.class);
         parser.accepts("u").withRequiredArg().ofType(String.class);
 
+        parser.accepts("file.out").withRequiredArg().ofType(String.class);
+
         formatter.setSupportedOptions(parser);
 
         OptionSet options = parser.parse(argv);
@@ -586,6 +585,15 @@ public class Jisql {
         }
 
         connectString = (String) options.valueOf("cstring");
+
+        if (options.has("file.out")) {
+            File file = new File((String) options.valueOf("file.out"));
+            if(!file.exists()) file.createNewFile();
+            FileOutputStream fos = new FileOutputStream(file, true);
+            outStream = new PrintStream(fos, true);
+        } else {
+            outStream = System.out;
+        }
 
         if (options.has("c"))
             commandTerminator = (String) options.valueOf("c");
